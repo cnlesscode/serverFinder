@@ -16,12 +16,32 @@ var upgrader = websocket.Upgrader{
 }
 
 func websocketHandler(w http.ResponseWriter, r *http.Request) {
+	connIP := r.URL.Query().Get("ip")
+	mainKey := r.URL.Query().Get("mainKey")
+	if mainKey == "" || connIP == "" {
+		return
+	}
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		return
 	}
-	defer conn.Close()
-
+	// 记录监听连接
+	conns, ok := ListenClients[mainKey]
+	if !ok {
+		ListenClients[mainKey] = map[string]*websocket.Conn{connIP: conn}
+	} else {
+		conns[connIP] = conn
+		ListenClients[mainKey] = conns
+	}
+	// 连接被关闭
+	defer func() {
+		conn.Close()
+		conns, ok := ListenClients[mainKey]
+		if ok {
+			delete(conns, connIP)
+			ListenClients[mainKey] = conns
+		}
+	}()
 	for {
 		// 读取消息
 		messageType, message, err := conn.ReadMessage()
