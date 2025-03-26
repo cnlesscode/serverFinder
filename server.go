@@ -98,7 +98,9 @@ func Start(config Config) {
 		}
 		serverFinderMap.Store(v.Name[0:len(v.Name)-5], mapData)
 	}
-
+	// 开启 websocket 监听服务
+	StartListenInServer()
+	// 开启 TCP 服务
 	tcpServer := NewTCPServer(":" + GlobalConfig.Port)
 	tcpServer.Accept()
 }

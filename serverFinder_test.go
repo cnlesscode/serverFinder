@@ -10,6 +10,7 @@ var config Config = Config{
 	Enable:     "on",
 	DataLogDir: "D:\\githubApps\\serverFinder\\dataLogs",
 	Port:       "8001",
+	ListenPort: "8002",
 }
 
 // 测试命令 :
