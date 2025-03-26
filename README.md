@@ -1,9 +1,9 @@
 ### ServerFinder
-ServerFinder 底层是一款基于 Map 实现的键值对存储服务，用于服务注册与发现。
+ServerFinder 底层实现了基于Map的键值对存储服务，被用于服务注册与发现。
 
 ### Run 
 ```
-package ServerFinder
+package serverFinder
 
 import (
 	"fmt"
@@ -15,6 +15,7 @@ var config Config = Config{
 	Enable:     "on",
 	DataLogDir: "D:\\githubApps\\serverFinder\\dataLogs",
 	Port:       "8001",
+	ListenPort: "8002",
 }
 
 // 测试命令 :

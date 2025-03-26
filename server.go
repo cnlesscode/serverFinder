@@ -12,7 +12,7 @@ import (
 
 var GlobalConfig = Config{}
 
-// TCPServer TCP服务器结构
+// TCP服务器结构
 type TCPServer struct {
 	listener net.Listener
 }
