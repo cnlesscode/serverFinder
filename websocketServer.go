@@ -1,6 +1,7 @@
 package serverFinder
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 
@@ -62,12 +63,20 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	// 循环读取消息
 	for {
 		// 读取消息
-		messageType, message, err := conn.ReadMessage()
+		_, message, err := conn.ReadMessage()
 		if err != nil {
 			break
 		}
+		if action == "getData" {
+			data, ok := GetItem(mainKey, addr)
+			if ok {
+				messageByte, _ := json.Marshal(data)
+				conn.WriteMessage(websocket.TextMessage, messageByte)
+				break
+			}
+		}
 		// 回复消息
-		err = conn.WriteMessage(messageType, message)
+		err = conn.WriteMessage(websocket.TextMessage, message)
 		if err != nil {
 			break
 		}
