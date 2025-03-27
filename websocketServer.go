@@ -58,6 +58,15 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			conn.Close()
 			RemoveItem(mainKey, addr)
 		}()
+	} else if action == "getData" {
+		data, ok := Get(mainKey)
+		if ok {
+			messageByte, _ := json.Marshal(data)
+			conn.WriteMessage(websocket.TextMessage, messageByte)
+			conn.Close()
+		}
+	} else {
+		conn.Close()
 	}
 
 	// 循环读取消息
@@ -66,14 +75,6 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		_, message, err := conn.ReadMessage()
 		if err != nil {
 			break
-		}
-		if action == "getData" {
-			data, ok := Get(mainKey)
-			if ok {
-				messageByte, _ := json.Marshal(data)
-				conn.WriteMessage(websocket.TextMessage, messageByte)
-				break
-			}
 		}
 		// 回复消息
 		err = conn.WriteMessage(websocket.TextMessage, message)

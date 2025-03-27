@@ -16,10 +16,10 @@ import (
 //	}
 var ListenClients map[string]map[string]*websocket.Conn = make(map[string]map[string]*websocket.Conn)
 
-func Listen(action, addr, mainKey string, onChange func(msg map[string]any)) {
+func Listen(addr, mainKey string, onChange func(msg map[string]any)) {
 	go func() {
 		// 初始化连接地址
-		url := "ws://" + addr + "?action=" + action + "&mainKey=" + mainKey + "&addr=" + gotool.GetLocalIP()
+		url := "ws://" + addr + "?action=listen&mainKey=" + mainKey + "&addr=" + gotool.GetLocalIP()
 	ListenLoop:
 		// 建立连接
 		conn, _, err := websocket.DefaultDialer.Dial(url, nil)

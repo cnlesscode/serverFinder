@@ -6,10 +6,10 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-func Register(action, addr, mainKey, registerAddr string) {
+func Register(addr, mainKey, registerAddr string) {
 	go func() {
 		// 初始化连接地址
-		url := "ws://" + addr + "?action=" + action + "&mainKey=" + mainKey + "&addr=" + registerAddr
+		url := "ws://" + addr + "?action=register&mainKey=" + mainKey + "&addr=" + registerAddr
 
 	RegisterLoop:
 		// 创建连接
