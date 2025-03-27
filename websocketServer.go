@@ -68,7 +68,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 		if action == "getData" {
-			data, ok := GetItem(mainKey, addr)
+			data, ok := Get(mainKey)
 			if ok {
 				messageByte, _ := json.Marshal(data)
 				conn.WriteMessage(websocket.TextMessage, messageByte)
