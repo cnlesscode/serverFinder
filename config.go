@@ -5,5 +5,4 @@ type Config struct {
 	DataLogDir string
 	Host       string
 	Port       string
-	ListenPort string
 }
