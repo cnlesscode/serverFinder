@@ -9,7 +9,7 @@ import (
 
 var GlobalConfig = Config{}
 
-// 开启 TCP 服务
+// 启动服务
 func Start(config Config) {
 	GlobalConfig = config
 	if GlobalConfig.Enable != "on" {

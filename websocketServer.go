@@ -85,7 +85,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 }
 func StartServer() {
 	go func() {
-		http.HandleFunc("/", handler)
+		http.HandleFunc("/ServerFinder", handler)
 		log.Println("✔ ServerFinder : 监听服务启动，端口:" + GlobalConfig.Port)
 		err := http.ListenAndServe(":"+GlobalConfig.Port, nil)
 		if err != nil {

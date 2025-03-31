@@ -9,7 +9,7 @@ import (
 func Register(addr, mainKey, registerAddr string) {
 	go func() {
 		// 初始化连接地址
-		url := "ws://" + addr + "?action=register&mainKey=" + mainKey + "&addr=" + registerAddr
+		url := "ws://" + addr + "/ServerFinder?action=register&mainKey=" + mainKey + "&addr=" + registerAddr
 
 	RegisterLoop:
 		// 创建连接
@@ -41,7 +41,6 @@ func Register(addr, mainKey, registerAddr string) {
 				time.Sleep(time.Millisecond * 500)
 				goto RegisterLoop
 			}
-			// fmt.Printf("string(message): %v\n", string(message))
 		}
 	}()
 }
