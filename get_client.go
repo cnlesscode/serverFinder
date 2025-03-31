@@ -11,7 +11,7 @@ import (
 func GetData(addr, mainKey string, callBack func(msg map[string]any)) {
 	tryCount := 0
 	// 初始化连接地址
-	url := "ws://" + addr + "?action=getData&mainKey=" + mainKey + "&addr=" + gotool.GetLocalIP()
+	url := "ws://" + addr + "/ServerFinder?action=getData&mainKey=" + mainKey + "&addr=" + gotool.GetLocalIP()
 GetDataLoop:
 	// 建立连接
 	conn, _, err := websocket.DefaultDialer.Dial(url, nil)
