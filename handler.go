@@ -2,7 +2,6 @@ package serverFinder
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 
 	"github.com/gorilla/websocket"
@@ -16,24 +15,24 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-func handler(w http.ResponseWriter, r *http.Request) {
+func Handler(w http.ResponseWriter, r *http.Request) {
 
 	// 初始化 url 参数
 	addr := r.URL.Query().Get("addr")
 	mainKey := r.URL.Query().Get("mainKey")
+	sonKey := r.URL.Query().Get("sonKey")
 	action := r.URL.Query().Get("action")
 	if mainKey == "" || action == "" || addr == "" {
 		return
 	}
 
-	// 升级协议
-	conn, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		return
-	}
-
 	// 监听模式
 	if action == "listen" {
+		// 升级协议
+		conn, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			return
+		}
 		// 记录监听连接
 		conns, ok := ListenClients[mainKey]
 		if !ok {
@@ -51,45 +50,38 @@ func handler(w http.ResponseWriter, r *http.Request) {
 				ListenClients[mainKey] = conns
 			}
 		}()
+		for {
+			_, _, err := conn.ReadMessage()
+			if err != nil {
+				break
+			}
+		}
 	} else if action == "register" { // 注册模式
+		// 升级协议
+		conn, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			return
+		}
 		SetItem(mainKey, addr, addr)
 		// 连接被关闭
 		defer func() {
 			conn.Close()
 			RemoveItem(mainKey, addr)
 		}()
-	} else if action == "getData" {
+		for {
+			_, _, err := conn.ReadMessage()
+			if err != nil {
+				break
+			}
+		}
+	} else if action == "get" {
 		data, ok := Get(mainKey)
 		if ok {
 			messageByte, _ := json.Marshal(data)
-			conn.WriteMessage(websocket.TextMessage, messageByte)
-			conn.Close()
+			w.Write(messageByte)
 		}
-	} else {
-		conn.Close()
+	} else if action == "remove" {
+		RemoveItem(mainKey, sonKey)
+		w.Write([]byte("ok"))
 	}
-
-	// 循环读取消息
-	for {
-		// 读取消息
-		_, message, err := conn.ReadMessage()
-		if err != nil {
-			break
-		}
-		// 回复消息
-		err = conn.WriteMessage(websocket.TextMessage, message)
-		if err != nil {
-			break
-		}
-	}
-}
-func StartServer() {
-	go func() {
-		http.HandleFunc("/ServerFinder", handler)
-		log.Println("✔ ServerFinder : 监听服务启动，端口:" + GlobalConfig.Port)
-		err := http.ListenAndServe(":"+GlobalConfig.Port, nil)
-		if err != nil {
-			log.Fatal("✘ ServerFinder : 监听服务启动失败，", err.Error())
-		}
-	}()
 }

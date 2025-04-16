@@ -1,17 +1,17 @@
-package serverFinder
+package client
 
 import (
-	"encoding/json"
 	"time"
 
 	"github.com/cnlesscode/gotool"
 	"github.com/gorilla/websocket"
 )
 
-func GetData(addr, mainKey string, callBack func(msg map[string]any)) {
+// 删除数据 [ 不需要保持连接 ]
+func Remove(addr, mainKey, sonKey string) {
 	tryCount := 0
 	// 初始化连接地址
-	url := "ws://" + addr + "/ServerFinder?action=getData&mainKey=" + mainKey + "&addr=" + gotool.GetLocalIP()
+	url := "ws://" + addr + APIBaseURL + "remove&mainKey=" + mainKey + "&sonKey=" + sonKey + "&addr=" + gotool.GetLocalIP()
 GetDataLoop:
 	// 建立连接
 	conn, _, err := websocket.DefaultDialer.Dial(url, nil)
@@ -27,14 +27,9 @@ GetDataLoop:
 	defer conn.Close()
 	// 监听消息
 	for {
-		_, messageByte, err := conn.ReadMessage()
+		_, _, err := conn.ReadMessage()
 		if err != nil {
 			break
 		}
-		message := make(map[string]any)
-		if err := json.Unmarshal(messageByte, &message); err != nil {
-			break
-		}
-		callBack(message)
 	}
 }

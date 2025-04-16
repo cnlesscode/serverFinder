@@ -12,7 +12,6 @@ func SendNotifyMessage(mainKey string) {
 	if !ok {
 		return
 	}
-
 	data, ok := mainDB.(map[string]any)
 	if !ok {
 		return

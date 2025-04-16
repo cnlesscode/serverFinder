@@ -1,4 +1,4 @@
-package serverFinder
+package client
 
 import (
 	"encoding/json"
@@ -14,12 +14,11 @@ import (
 //	map[string]map[string]*websocket.Conn = {
 //		"fisrtMQfirstMQServers":{"192.168.1.11":conn}
 //	}
-var ListenClients map[string]map[string]*websocket.Conn = make(map[string]map[string]*websocket.Conn)
 
 func Listen(addr, mainKey string, onChange func(msg map[string]any)) {
 	go func() {
 		// 初始化连接地址
-		url := "ws://" + addr + "/ServerFinder?action=listen&mainKey=" + mainKey + "&addr=" + gotool.GetLocalIP()
+		url := "ws://" + addr + APIBaseURL + "listen&mainKey=" + mainKey + "&addr=" + gotool.GetLocalIP()
 	ListenLoop:
 		// 建立连接
 		conn, _, err := websocket.DefaultDialer.Dial(url, nil)
@@ -38,11 +37,6 @@ func Listen(addr, mainKey string, onChange func(msg map[string]any)) {
 				// 断线重连
 				time.Sleep(time.Second)
 				goto ListenLoop
-			}
-			// ping 消息
-			messageString := string(messageByte)
-			if messageString == "ping" {
-				continue
 			}
 			// 数据变化消息
 			message := make(map[string]any)

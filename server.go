@@ -2,19 +2,28 @@ package serverFinder
 
 import (
 	"encoding/json"
+	"log"
+	"net/http"
 	"os"
 
+	"github.com/cnlesscode/gotool"
 	"github.com/cnlesscode/gotool/gfs"
+	client "github.com/cnlesscode/serverFinder/clinet"
 )
 
 var GlobalConfig = Config{}
 
 // 启动服务
 func Start(config Config) {
+
+	// 获取本机IP
+	localIP := gotool.GetLocalIP()
+
 	GlobalConfig = config
-	if GlobalConfig.Enable != "on" {
+	if GlobalConfig.Host != localIP {
 		return
 	}
+
 	// 初始化数据目录
 	if !gfs.DirExists(GlobalConfig.DataLogDir) {
 		err := os.Mkdir(GlobalConfig.DataLogDir, 0777)
@@ -22,14 +31,17 @@ func Start(config Config) {
 			panic("ServerFinder Error : 数据目录创建失败: " + err.Error() + "\n")
 		}
 	}
+
 	// 加载数据到 syncMap
 	res := gfs.ScanDirStruct{
 		Path: GlobalConfig.DataLogDir,
 	}
+
 	err := gfs.ScanDir(false, &res)
 	if err != nil {
 		panic("ServerFinder Error : 数据目录扫描失败: " + err.Error() + "\n")
 	}
+
 	for _, v := range res.Sons {
 		if v.IsDir {
 			continue
@@ -47,6 +59,15 @@ func Start(config Config) {
 		}
 		serverFinderMap.Store(v.Name[0:len(v.Name)-5], mapData)
 	}
+
 	// 开启 websocket 监听服务
-	StartServer()
+	go func() {
+		http.HandleFunc(client.APIRouteURL, Handler)
+		log.Println("✔ ServerFinder : 监听服务启动，端口:" + GlobalConfig.Port)
+		err := http.ListenAndServe(":"+GlobalConfig.Port, nil)
+		if err != nil {
+			log.Fatal("✘ ServerFinder : 监听服务启动失败，", err.Error())
+		}
+	}()
+
 }
