@@ -29,17 +29,6 @@ func Listen(addr, mainKey string, onChange func(msg map[string]any)) {
 			goto ListenLoop
 		}
 
-		// 间隔 10 秒，向服务端发送心跳信号
-		go func(connIn *websocket.Conn) {
-			for {
-				err = conn.WriteMessage(websocket.TextMessage, []byte("ping"))
-				if err != nil {
-					break
-				}
-				time.Sleep(time.Second * 10)
-			}
-		}(conn)
-
 		// 监听消息
 		for {
 			_, messageByte, err := conn.ReadMessage()
@@ -58,7 +47,7 @@ func Listen(addr, mainKey string, onChange func(msg map[string]any)) {
 			// 数据变化消息
 			message := make(map[string]any)
 			if err := json.Unmarshal(messageByte, &message); err != nil {
-				return
+				continue
 			}
 			onChange(message)
 		}
