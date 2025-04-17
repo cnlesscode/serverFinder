@@ -8,7 +8,7 @@ import (
 
 	"github.com/cnlesscode/gotool"
 	"github.com/cnlesscode/gotool/gfs"
-	client "github.com/cnlesscode/serverFinder/clinet"
+	"github.com/cnlesscode/serverFinder/client"
 )
 
 var GlobalConfig = Config{}
