@@ -26,10 +26,13 @@ func Register(addr, mainKey, registerAddr string) {
 			// 服务端断开连接
 			if err != nil {
 				conn.Close()
-				// 断线重连
-				time.Sleep(time.Second)
-				goto RegisterLoop
+				break
 			}
 		}
+
+		// 断线重连
+		time.Sleep(time.Second)
+		goto RegisterLoop
+
 	}()
 }

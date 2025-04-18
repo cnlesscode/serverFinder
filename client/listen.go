@@ -34,9 +34,7 @@ func Listen(addr, mainKey string, onChange func(msg map[string]any)) {
 			if err != nil {
 				// 断开连接
 				conn.Close()
-				// 断线重连
-				time.Sleep(time.Second)
-				goto ListenLoop
+				break
 			}
 			// 数据变化消息
 			message := make(map[string]any)
@@ -45,5 +43,8 @@ func Listen(addr, mainKey string, onChange func(msg map[string]any)) {
 			}
 			onChange(message)
 		}
+		// 断线重连
+		time.Sleep(time.Second)
+		goto ListenLoop
 	}()
 }
