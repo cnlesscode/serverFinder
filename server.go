@@ -63,9 +63,10 @@ func Start(config Config) {
 	// 开启 websocket 监听服务
 	http.HandleFunc(client.APIRouteURL, Handler)
 	log.Println("✔ ServerFinder : 监听服务启动，端口:" + GlobalConfig.Port)
-	err = http.ListenAndServe(":"+GlobalConfig.Port, nil)
-	if err != nil {
-		log.Fatal("✘ ServerFinder : 监听服务启动失败，", err.Error())
-	}
-
+	go func() {
+		err = http.ListenAndServe(":"+GlobalConfig.Port, nil)
+		if err != nil {
+			log.Fatal("✘ ServerFinder : 监听服务启动失败，", err.Error())
+		}
+	}()
 }
