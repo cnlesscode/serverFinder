@@ -2,16 +2,19 @@ package serverFinder
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"os"
+	"sync"
 
 	"github.com/cnlesscode/gotool"
 	"github.com/cnlesscode/gotool/gfs"
 	"github.com/cnlesscode/serverFinder/client"
+	"github.com/gorilla/websocket"
 )
 
 var GlobalConfig = Config{}
+var ConnsMu sync.RWMutex
+var Conns map[string]map[*websocket.Conn]int = map[string]map[*websocket.Conn]int{}
 
 // 启动服务
 func Start(config Config) {
@@ -24,11 +27,17 @@ func Start(config Config) {
 		return
 	}
 
+	if GlobalConfig.DataLogDir == "" {
+		GlobalConfig.DataLogDir = "./sf_data_log"
+	}
+
 	// 初始化数据目录
 	if !gfs.DirExists(GlobalConfig.DataLogDir) {
 		err := os.Mkdir(GlobalConfig.DataLogDir, 0777)
 		if err != nil {
-			panic("ServerFinder Error : 数据目录创建失败: " + err.Error() + "\n")
+			gotool.LogFatal(
+				"ServerFinder Startup failed. Error : ",
+				err.Error(), ".")
 		}
 	}
 
@@ -39,7 +48,9 @@ func Start(config Config) {
 
 	err := gfs.ScanDir(false, &res)
 	if err != nil {
-		panic("ServerFinder Error : 数据目录扫描失败: " + err.Error() + "\n")
+		gotool.LogFatal(
+			"ServerFinder Startup failed. Error : ",
+			err.Error(), ".")
 	}
 
 	for _, v := range res.Sons {
@@ -62,11 +73,16 @@ func Start(config Config) {
 
 	// 开启 websocket 监听服务
 	http.HandleFunc(client.APIRouteURL, Handler)
-	log.Println("✔ ServerFinder : 监听服务启动，端口:" + GlobalConfig.Port)
+	gotool.LogOk(
+		"ServerFinder is running on port ",
+		GlobalConfig.Port, ".")
 	go func() {
 		err = http.ListenAndServe(":"+GlobalConfig.Port, nil)
 		if err != nil {
-			log.Fatal("✘ ServerFinder : 监听服务启动失败，", err.Error())
+			gotool.LogFatal(
+				"ServerFinder Startup failed. Error : ",
+				err.Error(), ".")
 		}
 	}()
+
 }

@@ -1,12 +1,13 @@
 package client
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/gorilla/websocket"
 )
 
-func Register(addr, mainKey, registerAddr string) {
+func Register(addr, mainKey, registerAddr string, callback func(msg map[string]any)) {
 	go func() {
 		// 初始化连接地址
 		url := "ws://" + addr + APIBaseURL + "register&mainKey=" + mainKey + "&addr=" + registerAddr
@@ -22,12 +23,18 @@ func Register(addr, mainKey, registerAddr string) {
 
 		// 读取消息保持连接
 		for {
-			_, _, err := conn.ReadMessage()
+			_, messageByte, err := conn.ReadMessage()
 			// 服务端断开连接
 			if err != nil {
 				conn.Close()
 				break
 			}
+			// 数据变化消息
+			message := make(map[string]any)
+			if err := json.Unmarshal(messageByte, &message); err != nil {
+				continue
+			}
+			callback(message)
 		}
 
 		// 断线重连

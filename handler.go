@@ -3,6 +3,7 @@ package serverFinder
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -20,52 +21,38 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	// 初始化 url 参数
 	addr := r.URL.Query().Get("addr")
 	mainKey := r.URL.Query().Get("mainKey")
-	sonKey := r.URL.Query().Get("sonKey")
 	action := r.URL.Query().Get("action")
 	if mainKey == "" || action == "" || addr == "" {
 		return
 	}
 
-	// 监听模式
-	if action == "listen" {
+	// 服务注册
+	switch action {
+	case "register":
 		// 升级协议
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			return
 		}
-		// 记录监听连接
-		conns, ok := ListenClients[mainKey]
-		if !ok {
-			ListenClients[mainKey] = map[string]*websocket.Conn{addr: conn}
+		// 记录连接
+		ConnsMu.Lock()
+		if _, ok := Conns[mainKey]; ok {
+			Conns[mainKey][conn] = 1
 		} else {
-			conns[addr] = conn
-			ListenClients[mainKey] = conns
+			Conns[mainKey] = map[*websocket.Conn]int{}
+			Conns[mainKey][conn] = 1
 		}
+		ConnsMu.Unlock()
+		SetItem(mainKey, addr, time.Now().Unix())
 		// 连接被关闭
 		defer func() {
 			conn.Close()
-			conns, ok := ListenClients[mainKey]
-			if ok {
-				delete(conns, addr)
-				ListenClients[mainKey] = conns
+			// 删除连接
+			ConnsMu.Lock()
+			if _, ok := Conns[mainKey]; ok {
+				delete(Conns[mainKey], conn)
 			}
-		}()
-		for {
-			_, _, err := conn.ReadMessage()
-			if err != nil {
-				break
-			}
-		}
-	} else if action == "register" { // 注册模式
-		// 升级协议
-		conn, err := upgrader.Upgrade(w, r, nil)
-		if err != nil {
-			return
-		}
-		SetItem(mainKey, addr, addr)
-		// 连接被关闭
-		defer func() {
-			conn.Close()
+			ConnsMu.Unlock()
 			RemoveItem(mainKey, addr)
 		}()
 		for {
@@ -74,14 +61,13 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 		}
-	} else if action == "get" {
+
+	case "get":
 		data, ok := Get(mainKey)
 		if ok {
 			messageByte, _ := json.Marshal(data)
 			w.Write(messageByte)
 		}
-	} else if action == "remove" {
-		RemoveItem(mainKey, sonKey)
-		w.Write([]byte("ok"))
 	}
+
 }

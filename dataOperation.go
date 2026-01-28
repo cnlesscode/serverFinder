@@ -6,20 +6,24 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
-
-	"github.com/gorilla/websocket"
 )
+
+type Config struct {
+	Enable     string
+	DataLogDir string
+	Host       string
+	Port       string
+}
 
 // 数据字典
 var serverFinderMap *sync.Map = &sync.Map{}
-
-// 监听客户端连接池
-var ListenClients map[string]map[string]*websocket.Conn = make(map[string]map[string]*websocket.Conn)
 
 // 设置数据
 func Set(k string, v any) {
 	serverFinderMap.Store(k, v)
 	SaveDataToLog(k)
+	// 发送通知
+	SendNotifyMessage(k)
 }
 
 // 设置项目
@@ -90,18 +94,16 @@ func RemoveItem(mainKey, itemKey string) {
 func SaveDataToLog(k string) error {
 	mapdata, ok := serverFinderMap.Load(k)
 	if !ok {
-		return errors.New("ServerFinder Error : 数据不存在")
+		return errors.New("ServerFinder Error : data not found")
 	}
 	str, err := json.Marshal(mapdata)
 	if err != nil {
-		return errors.New("ServerFinder Error : JSON 格式转换失败")
+		return errors.New("ServerFinder Error : json marshal error")
 	}
 	filePath := filepath.Join(GlobalConfig.DataLogDir, k+".json")
 	err = os.WriteFile(filePath, str, 0777)
 	if err != nil {
-		return errors.New("ServerFinder Error : 数据保存失败")
+		return errors.New("ServerFinder Error : write file error")
 	}
-	// 数据变化时通知对应的服务
-	SendNotifyMessage(k)
 	return nil
 }
