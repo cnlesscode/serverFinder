@@ -28,31 +28,17 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 
 	// 服务注册
 	switch action {
+
 	case "register":
 		// 升级协议
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			return
 		}
-		// 记录连接
-		ConnsMu.Lock()
-		if _, ok := Conns[mainKey]; ok {
-			Conns[mainKey][conn] = 1
-		} else {
-			Conns[mainKey] = map[*websocket.Conn]int{}
-			Conns[mainKey][conn] = 1
-		}
-		ConnsMu.Unlock()
 		SetItem(mainKey, addr, time.Now().Unix())
 		// 连接被关闭
 		defer func() {
 			conn.Close()
-			// 删除连接
-			ConnsMu.Lock()
-			if _, ok := Conns[mainKey]; ok {
-				delete(Conns[mainKey], conn)
-			}
-			ConnsMu.Unlock()
 			RemoveItem(mainKey, addr)
 		}()
 		for {
@@ -68,6 +54,38 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 			messageByte, _ := json.Marshal(data)
 			w.Write(messageByte)
 		}
+
+	case "listen":
+		// 升级协议
+		conn, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			return
+		}
+		// 记录监听连接
+		ConnsMu.Lock()
+		if _, ok := ListenClients[mainKey]; ok {
+			ListenClients[mainKey][conn] = 1
+		} else {
+			ListenClients[mainKey] = map[*websocket.Conn]int{}
+			ListenClients[mainKey][conn] = 1
+		}
+		ConnsMu.Unlock()
+		// 连接被关闭
+		defer func() {
+			// 删除连接
+			ConnsMu.Lock()
+			if _, ok := ListenClients[mainKey]; ok {
+				delete(ListenClients[mainKey], conn)
+			}
+			ConnsMu.Unlock()
+		}()
+		for {
+			_, _, err := conn.ReadMessage()
+			if err != nil {
+				break
+			}
+		}
+
 	}
 
 }

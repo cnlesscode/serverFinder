@@ -21,7 +21,7 @@ func SendNotifyMessage(mainKey string) {
 		return
 	}
 	// 获取监听客户端连接，发送通知
-	if conns, ok := Conns[mainKey]; ok {
+	if conns, ok := ListenClients[mainKey]; ok {
 		for conn := range conns {
 			conn.WriteMessage(websocket.TextMessage, message)
 		}

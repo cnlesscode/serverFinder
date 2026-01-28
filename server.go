@@ -14,7 +14,9 @@ import (
 
 var GlobalConfig = Config{}
 var ConnsMu sync.RWMutex
-var Conns map[string]map[*websocket.Conn]int = map[string]map[*websocket.Conn]int{}
+
+// 监听客户端连接池
+var ListenClients map[string]map[*websocket.Conn]int = map[string]map[*websocket.Conn]int{}
 
 // 启动服务
 func Start(config Config) {
