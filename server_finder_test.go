@@ -14,7 +14,7 @@ import (
 func TestStartServer(t *testing.T) {
 	gotool.SetLogLevel(3)
 	config := Config{
-		Host: "192.168.3.161",
+		Host: "192.168.0.185",
 		Port: "9901",
 	}
 	Start(config)
@@ -27,9 +27,9 @@ func TestStartServer(t *testing.T) {
 // go test -v -run=TestRegister
 func TestRegister(t *testing.T) {
 	client.Register(
-		"192.168.3.161:9901",
+		"192.168.0.185:9901",
 		"test",
-		"192.168.3.161:80")
+		"192.168.0.185:80")
 	for {
 		time.Sleep(time.Second)
 	}
@@ -38,7 +38,7 @@ func TestRegister(t *testing.T) {
 // go test -v -run=TestGET
 func TestGET(t *testing.T) {
 	res, err := client.Get(
-		"192.168.3.161:9901", "test")
+		"192.168.0.185:9901", "test")
 	if err != nil {
 		fmt.Println(err)
 	} else {
@@ -49,9 +49,9 @@ func TestGET(t *testing.T) {
 // go test -v -run=TestListen
 func TestListen(t *testing.T) {
 	client.Listen(
-		"192.168.3.161:9901",
+		"192.168.0.185:9901",
 		"test",
-		func(msg map[string]any) {
+		func(msg map[string]int) {
 			fmt.Println(msg)
 		})
 	for {

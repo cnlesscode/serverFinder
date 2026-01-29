@@ -15,7 +15,7 @@ import (
 //		"fisrtMQfirstMQServers":{"192.168.1.11":conn}
 //	}
 
-func Listen(addr, mainKey string, onChange func(msg map[string]any)) {
+func Listen(addr, mainKey string, onChange func(msg map[string]int)) {
 	go func() {
 		// 初始化连接地址
 		url := "ws://" + addr + APIBaseURL + "listen&mainKey=" +
@@ -38,7 +38,7 @@ func Listen(addr, mainKey string, onChange func(msg map[string]any)) {
 				break
 			}
 			// 数据变化消息
-			message := make(map[string]any)
+			message := make(map[string]int)
 			if err := json.Unmarshal(messageByte, &message); err != nil {
 				continue
 			}

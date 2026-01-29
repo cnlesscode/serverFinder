@@ -1,7 +1,6 @@
 package client
 
 import (
-	"encoding/json"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -23,16 +22,11 @@ func Register(addr, mainKey, registerAddr string) {
 
 		// 读取消息保持连接
 		for {
-			_, messageByte, err := conn.ReadMessage()
+			_, _, err := conn.ReadMessage()
 			// 服务端断开连接
 			if err != nil {
 				conn.Close()
 				break
-			}
-			// 数据变化消息
-			message := make(map[string]any)
-			if err := json.Unmarshal(messageByte, &message); err != nil {
-				continue
 			}
 		}
 
