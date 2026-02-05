@@ -5,19 +5,13 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"sync"
 
 	"github.com/cnlesscode/gotool"
 	"github.com/cnlesscode/gotool/gfs"
 	"github.com/cnlesscode/serverFinder/client"
-	"github.com/gorilla/websocket"
 )
 
 var GlobalConfig = Config{}
-var ConnsMu sync.RWMutex
-
-// 监听客户端连接池
-var ListenClients map[string]map[*websocket.Conn]int = map[string]map[*websocket.Conn]int{}
 
 // 启动服务
 func Start(config Config) {
@@ -37,7 +31,7 @@ func Start(config Config) {
 
 	// 初始化数据目录
 	if !gfs.DirExists(GlobalConfig.DataLogDir) {
-		err := os.Mkdir(GlobalConfig.DataLogDir, 0775)
+		err := os.Mkdir(GlobalConfig.DataLogDir, 0644)
 		if err != nil {
 			gotool.LogFatal(
 				"ServerFinder Startup failed. Error : ",

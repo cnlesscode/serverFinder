@@ -101,7 +101,7 @@ func SaveDataToLog(k string) error {
 		return errors.New("ServerFinder Error : json marshal error")
 	}
 	filePath := filepath.Join(GlobalConfig.DataLogDir, k+".json")
-	err = os.WriteFile(filePath, str, 0777)
+	err = os.WriteFile(filePath, str, 0644)
 	if err != nil {
 		return errors.New("ServerFinder Error : write file error")
 	}

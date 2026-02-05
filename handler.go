@@ -3,9 +3,11 @@ package serverFinder
 import (
 	"encoding/json"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/cnlesscode/serverFinder/client"
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
 
@@ -16,6 +18,10 @@ var upgrader = websocket.Upgrader{
 		return true // 允许所有来源的连接
 	},
 }
+
+// 监听客户端连接池
+var ConnsMu sync.RWMutex
+var ListenClients = make(map[string]map[string]*websocket.Conn)
 
 func Handler(w http.ResponseWriter, r *http.Request) {
 
@@ -31,43 +37,26 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	switch action {
 	// 服务注册
 	case "register":
+		connUUID := uuid.New().String()
 		// 升级协议
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			return
 		}
-
-		conn.SetReadDeadline(time.Now().Add(client.ReadDeadlineTimer * time.Second))
-
 		// 保存注册节点数据
 		SetItem(mainKey, addr, time.Now().Unix())
-
 		// 注册连接是否同时用于监听
 		if listen == "true" {
-			AddListener(mainKey, conn)
+			AddListener(mainKey, connUUID, conn)
 		}
-
 		// 连接被关闭
 		defer func() {
-			conn.Close()
 			RemoveItem(mainKey, addr)
 			if listen == "true" {
-				RemoveListener(mainKey, conn)
+				RemoveListener(mainKey, connUUID)
 			}
 		}()
-
-		// 监听 ping
-		conn.SetPingHandler(func(appData string) error {
-			conn.SetReadDeadline(time.Now().Add(client.ReadDeadlineTimer * time.Second))
-			return conn.WriteMessage(websocket.PongMessage, []byte(appData))
-		})
-
-		for {
-			_, _, err := conn.ReadMessage()
-			if err != nil {
-				break
-			}
-		}
+		webSocketReadLoopHandle(conn)
 	// 获取数据
 	case "get":
 		data, ok := Get(mainKey)
@@ -80,57 +69,62 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		}
 	// 监听数据变化
 	case "listen":
+		connUUID := uuid.New().String()
 		// 升级协议
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			return
 		}
-		conn.SetReadDeadline(time.Now().Add(client.ReadDeadlineTimer * time.Second))
-
 		// 记录监听连接
-		AddListener(mainKey, conn)
+		AddListener(mainKey, connUUID, conn)
 		// 连接被关闭
 		defer func() {
-			// 删除监听连接
-			RemoveListener(mainKey, conn)
+			RemoveListener(mainKey, connUUID)
 		}()
-
-		// 监听 ping
-		conn.SetPingHandler(func(appData string) error {
-			conn.SetReadDeadline(time.Now().Add(client.ReadDeadlineTimer * time.Second))
-			return conn.WriteMessage(websocket.PongMessage, []byte(appData))
-		})
-
-		for {
-			_, _, err := conn.ReadMessage()
-			if err != nil {
-				break
-			}
-		}
+		webSocketReadLoopHandle(conn)
 
 	}
-
 }
 
 // 保存连接到监听连接池
-func AddListener(mainKey string, conn *websocket.Conn) {
+func AddListener(mainKey, id string, conn *websocket.Conn) {
 	// 记录监听连接
 	ConnsMu.Lock()
+	defer ConnsMu.Unlock()
 	if _, ok := ListenClients[mainKey]; ok {
-		ListenClients[mainKey][conn] = 1
+		ListenClients[mainKey][id] = conn
 	} else {
-		ListenClients[mainKey] = map[*websocket.Conn]int{}
-		ListenClients[mainKey][conn] = 1
+		ListenClients[mainKey] = map[string]*websocket.Conn{}
+		ListenClients[mainKey][id] = conn
 	}
-	ConnsMu.Unlock()
 }
 
 // 删除监听连接
-func RemoveListener(mainKey string, conn *websocket.Conn) {
-	// 删除连接
+func RemoveListener(mainKey, id string) {
 	ConnsMu.Lock()
-	if _, ok := ListenClients[mainKey]; ok {
-		delete(ListenClients[mainKey], conn)
+	defer ConnsMu.Unlock()
+
+	if conns, exists := ListenClients[mainKey]; exists {
+		delete(conns, id)
+		// 清理空的 mainKey 条目，防止内存泄漏
+		if len(conns) == 0 {
+			delete(ListenClients, mainKey)
+		}
 	}
-	ConnsMu.Unlock()
+}
+
+func webSocketReadLoopHandle(conn *websocket.Conn) {
+	defer conn.Close()
+
+	conn.SetReadDeadline(time.Now().Add(client.ReadDeadlineTimer * time.Second))
+	conn.SetPingHandler(func(appData string) error {
+		conn.SetReadDeadline(time.Now().Add(client.ReadDeadlineTimer * time.Second))
+		return conn.WriteMessage(websocket.PongMessage, []byte(appData))
+	})
+	for {
+		_, _, err := conn.ReadMessage()
+		if err != nil {
+			break
+		}
+	}
 }

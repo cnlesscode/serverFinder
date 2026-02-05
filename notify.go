@@ -22,7 +22,7 @@ func SendNotifyMessage(mainKey string) {
 	}
 	// 获取监听客户端连接，发送通知
 	if conns, ok := ListenClients[mainKey]; ok {
-		for conn := range conns {
+		for _, conn := range conns {
 			conn.WriteMessage(websocket.TextMessage, message)
 		}
 	}
