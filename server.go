@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/cnlesscode/gotool"
@@ -25,6 +26,7 @@ func Start(config Config) {
 	localIP := gotool.GetLocalIP()
 
 	GlobalConfig = config
+
 	if GlobalConfig.Host != localIP {
 		return
 	}
@@ -35,7 +37,7 @@ func Start(config Config) {
 
 	// 初始化数据目录
 	if !gfs.DirExists(GlobalConfig.DataLogDir) {
-		err := os.Mkdir(GlobalConfig.DataLogDir, 0777)
+		err := os.Mkdir(GlobalConfig.DataLogDir, 0775)
 		if err != nil {
 			gotool.LogFatal(
 				"ServerFinder Startup failed. Error : ",
@@ -59,6 +61,10 @@ func Start(config Config) {
 		if v.IsDir {
 			continue
 		}
+		// 跳过非 JSON 文件
+		if !strings.HasSuffix(v.Name, ".json") {
+			continue
+		}
 		// 读取文件内容
 		content, err := os.ReadFile(v.Path)
 		if err != nil {
@@ -70,7 +76,8 @@ func Start(config Config) {
 		if err != nil {
 			continue
 		}
-		serverFinderMap.Store(v.Name[0:len(v.Name)-5], mapData)
+		keyName := strings.TrimSuffix(v.Name, ".json")
+		serverFinderMap.Store(keyName, mapData)
 	}
 
 	// 开启 websocket 监听服务
@@ -78,13 +85,11 @@ func Start(config Config) {
 	gotool.LogOk(
 		"ServerFinder is running on port ",
 		GlobalConfig.Port, ".")
-	go func() {
-		err = http.ListenAndServe(":"+GlobalConfig.Port, nil)
-		if err != nil {
-			gotool.LogFatal(
-				"ServerFinder Startup failed. Error : ",
-				err.Error(), ".")
-		}
-	}()
+	err = http.ListenAndServe(":"+GlobalConfig.Port, nil)
+	if err != nil {
+		gotool.LogFatal(
+			"ServerFinder Startup failed. Error : ",
+			err.Error(), ".")
+	}
 
 }

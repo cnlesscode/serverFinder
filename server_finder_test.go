@@ -23,13 +23,29 @@ func TestStartServer(t *testing.T) {
 	}
 }
 
-// 服务注册及服务组数据回调
-// go test -v -run=TestRegister
-func TestRegister(t *testing.T) {
-	client.Register(
+// 服务注册
+// go test -v -run=TestRegist
+func TestRegist(t *testing.T) {
+	client.Regist(
 		"192.168.0.185:9901",
 		"test",
-		"192.168.0.185:80")
+		"192.168.0.185:81",
+		nil)
+	for {
+		time.Sleep(time.Second)
+	}
+}
+
+// 服务注册
+// go test -v -run=TestRegistAndListen
+func TestRegistAndListen(t *testing.T) {
+	client.Regist(
+		"192.168.0.185:9901",
+		"test",
+		"192.168.0.185:80",
+		func(msg map[string]int) {
+			fmt.Println(msg)
+		})
 	for {
 		time.Sleep(time.Second)
 	}
